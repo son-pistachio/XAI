@@ -81,9 +81,9 @@ transform = transforms.Compose([
     transforms.Normalize(mean=data_config['transform']['mean'], std=data_config['transform']['std'])
 ])
 
-train_csv = './split_data_v2/train.csv'
-val_csv = './split_data_v2/val.csv'
-test_csv = './split_data_v2/test.csv'
+train_csv = './split_data/train.csv'
+val_csv = './split_data/val.csv'
+test_csv = './split_data/test.csv'
 
 train_dataset = CustomDatasetFromCSV(train_csv, transform=transform)
 val_dataset = CustomDatasetFromCSV(val_csv, transform=transform)
