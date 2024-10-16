@@ -214,7 +214,6 @@ checkpoint_callback = ModelCheckpoint(
     dirpath=os.path.join(logging_config['local_dirpath'], 'resnet'),
     filename='densnet201-{val_loss:.2f}-{val_f1:.2f}',
     save_top_k=1,
-    save_last=True,
     mode='min',
 )
 
