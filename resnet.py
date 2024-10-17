@@ -19,7 +19,7 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torchmetrics.functional.classification import f1_score, accuracy
 from torchmetrics.classification import MultilabelAveragePrecision
-from torchvision.models import resnet50, ResNet50_Weights
+from torchvision.models import resnet50, ResNet50_Weights, resnet101, ResNet101_Weights
 
 if torch.__version__ >= '2.0':
     torch.set_float32_matmul_precision('high')
@@ -98,7 +98,7 @@ test_loader = DataLoader(test_dataset, batch_size=train_config['batch_size'], sh
 class ResNetLightningModel(LightningModule):
     def __init__(self, num_classes, learning_rate):
         super(ResNetLightningModel, self).__init__()
-        self.model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
+        self.model = resnet101(weights=ResNet101_Weights.DEFAULT)
         in_features = self.model.fc.in_features
         self.model.fc = nn.Linear(in_features, num_classes)
         self.loss_fn = nn.BCEWithLogitsLoss()
@@ -123,7 +123,7 @@ class ResNetLightningModel(LightningModule):
         self.train_mAP.update(preds_prob, labels)
 
         f1 = f1_score(preds_prob, labels, task="multilabel",
-                    num_labels=self.num_classes, average='micro')
+                    num_labels=self.num_classes, average='weighted')
         # acc = accuracy(preds_prob, labels, task="multilabel",
         #             num_labels=self.num_classes, average='micro', threshold=0.5)
 
@@ -142,7 +142,7 @@ class ResNetLightningModel(LightningModule):
         self.val_mAP.update(preds_prob, labels)
 
         f1 = f1_score(preds_prob, labels, task="multilabel",
-                    num_labels=self.num_classes, average='micro')
+                    num_labels=self.num_classes, average='weighted')
         # acc = accuracy(preds_prob, labels, task="multilabel",
         #             num_labels=self.num_classes, average='micro', threshold=0.5)
 
@@ -161,7 +161,7 @@ class ResNetLightningModel(LightningModule):
         self.test_mAP.update(preds_prob, labels)
 
         f1 = f1_score(preds_prob, labels, task="multilabel",
-                    num_labels=self.num_classes, average='micro')
+                    num_labels=self.num_classes, average='weighted')
         # acc = accuracy(preds_prob, labels, task="multilabel",
         #             num_labels=self.num_classes, average='micro', threshold=0.5)
 
@@ -187,7 +187,7 @@ class ResNetLightningModel(LightningModule):
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
         return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'val_loss'}
     
     def save_model(self, save_path):
