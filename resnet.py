@@ -19,7 +19,7 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torchmetrics.functional.classification import f1_score, accuracy
 from torchmetrics.classification import MultilabelAveragePrecision
-from torchvision.models import resnet50, ResNet50_Weights, resnet101, ResNet101_Weights
+from torchvision.models import resnet50, ResNet50_Weights
 
 if torch.__version__ >= '2.0':
     torch.set_float32_matmul_precision('high')
@@ -98,7 +98,7 @@ test_loader = DataLoader(test_dataset, batch_size=train_config['batch_size'], sh
 class ResNetLightningModel(LightningModule):
     def __init__(self, num_classes, learning_rate):
         super(ResNetLightningModel, self).__init__()
-        self.model = resnet101(weights=ResNet101_Weights.DEFAULT)
+        self.model = resnet50(weights=ResNet50_Weights.DEFAULT)
         in_features = self.model.fc.in_features
         self.model.fc = nn.Linear(in_features, num_classes)
         self.loss_fn = nn.BCEWithLogitsLoss()

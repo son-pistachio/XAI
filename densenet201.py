@@ -105,9 +105,9 @@ class ResNetLightningModel(LightningModule):
         self.learning_rate = learning_rate
         self.num_classes = num_classes
         
-        self.train_mAP = MultilabelAveragePrecision(num_labels=num_classes)
-        self.val_mAP = MultilabelAveragePrecision(num_labels=num_classes)
-        self.test_mAP = MultilabelAveragePrecision(num_labels=num_classes)
+        self.train_mAP = MultilabelAveragePrecision(num_labels=num_classes, average='micro')
+        self.val_mAP = MultilabelAveragePrecision(num_labels=num_classes, average='micro')
+        self.test_mAP = MultilabelAveragePrecision(num_labels=num_classes, average='micro')
 
     def forward(self, x):
         outputs = self.model(x)
@@ -123,9 +123,9 @@ class ResNetLightningModel(LightningModule):
         self.train_mAP.update(preds_prob, labels)
 
         f1 = f1_score(preds_prob, labels, task="multilabel",
-                    num_labels=self.num_classes, average='micro', threshold=0.5)
-        acc = accuracy(preds_prob, labels, task="multilabel",
-                    num_labels=self.num_classes, average='macro', threshold=0.5)
+                    num_labels=self.num_classes, average='weighted')
+        # acc = accuracy(preds_prob, labels, task="multilabel",
+        #             num_labels=self.num_classes, average='macro', threshold=0.5)
 
         self.log('train_loss', loss, prog_bar=True, sync_dist=True)
         self.log('train_f1', f1, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
@@ -142,13 +142,13 @@ class ResNetLightningModel(LightningModule):
         self.val_mAP.update(preds_prob, labels)
 
         f1 = f1_score(preds_prob, labels, task="multilabel",
-                    num_labels=self.num_classes, average='micro', threshold=0.5)
-        acc = accuracy(preds_prob, labels, task="multilabel",
-                    num_labels=self.num_classes, average='macro', threshold=0.5)
+                    num_labels=self.num_classes, average='weighted')
+        # acc = accuracy(preds_prob, labels, task="multilabel",
+        #             num_labels=self.num_classes, average='macro', threshold=0.5)
 
         self.log('val_loss', loss, prog_bar=True, sync_dist=True)
         self.log('val_f1', f1, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
-        self.log('val_acc', acc, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
+        # self.log('val_acc', acc, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
         return loss
 
     def test_step(self, batch, batch_idx):
@@ -161,13 +161,13 @@ class ResNetLightningModel(LightningModule):
         self.test_mAP.update(preds_prob, labels)
 
         f1 = f1_score(preds_prob, labels, task="multilabel",
-                    num_labels=self.num_classes, average='micro', threshold=0.5)
-        acc = accuracy(preds_prob, labels, task="multilabel",
-                    num_labels=self.num_classes, average='macro', threshold=0.5)
+                    num_labels=self.num_classes, average='weighted')
+        # acc = accuracy(preds_prob, labels, task="multilabel",
+        #             num_labels=self.num_classes, average='macro', threshold=0.5)
 
         self.log('test_loss', loss, sync_dist=True)
         self.log('test_f1', f1, on_step=False, on_epoch=True, sync_dist=True)
-        self.log('test_acc', acc, on_step=False, on_epoch=True, sync_dist=True)
+        # self.log('test_acc', acc, on_step=False, on_epoch=True, sync_dist=True)
         return loss
 
     def on_train_epoch_end(self):
