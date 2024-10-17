@@ -129,7 +129,7 @@ class ResNetLightningModel(LightningModule):
 
         self.log('train_loss', loss, prog_bar=True, sync_dist=True)
         self.log('train_f1', f1, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
-        self.log('train_acc', acc, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
+        # self.log('train_acc', acc, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
