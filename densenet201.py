@@ -207,7 +207,7 @@ model = ResNetLightningModel(num_classes=num_classes, learning_rate=learning_rat
 
 # 로깅 및 체크포인트 설정
 now = datetime.datetime.now().strftime("%m%d_%H%M")
-wandb_logger = WandbLogger(project=logging_config['project_name'], log_model=logging_config['log_model'], name=f"resnet_{now}")
+wandb_logger = WandbLogger(project=logging_config['project_name'], log_model=logging_config['log_model'], name=f"densenet201_{now}")
 
 checkpoint_callback = ModelCheckpoint(
     monitor='val_loss',
