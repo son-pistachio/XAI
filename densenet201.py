@@ -1,4 +1,3 @@
-# resnet.py
 import multiprocessing
 import os
 import ast
@@ -95,9 +94,9 @@ val_loader = DataLoader(val_dataset, batch_size=train_config['batch_size'], shuf
 test_loader = DataLoader(test_dataset, batch_size=train_config['batch_size'], shuffle=False, num_workers=num_workers)
 
 # 모델 정의
-class ResNetLightningModel(LightningModule):
+class DenseNetModel(LightningModule):
     def __init__(self, num_classes, learning_rate):
-        super(ResNetLightningModel, self).__init__()
+        super(DenseNetModel, self).__init__()
         self.model = densenet201(weights=DenseNet201_Weights.DEFAULT)
         in_features = self.model.classifier.in_features
         self.model.classifier = nn.Linear(in_features, num_classes)
@@ -203,9 +202,9 @@ class ResNetLightningModel(LightningModule):
 num_classes = data_config['num_classes']
 learning_rate = train_config['learning_rate']
 
-model = ResNetLightningModel(num_classes=num_classes, learning_rate=learning_rate)
+model = DenseNetModel(num_classes=num_classes, learning_rate=learning_rate)
 
-# 로깅 및 체크포인트 설정
+# 로깅 및 체크포인트
 now = datetime.datetime.now().strftime("%m%d_%H%M")
 wandb_logger = WandbLogger(project=logging_config['project_name'], log_model=logging_config['log_model'], name=f"densenet201_{now}")
 
