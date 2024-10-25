@@ -1,3 +1,5 @@
+# denset.py
+import torch
 import multiprocessing
 import os
 import ast
@@ -16,12 +18,9 @@ from PIL import Image
 from pytorch_lightning import LightningModule, Trainer, seed_everything
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
-from torchmetrics.functional.classification import f1_score, accuracy
+from torchmetrics.functional.classification import f1_score
 from torchmetrics.classification import MultilabelAveragePrecision
 from torchvision.models import DenseNet201_Weights, densenet201
-
-if torch.__version__ >= '2.0':
-    torch.set_float32_matmul_precision('high')
 
 def set_seed(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)
@@ -39,12 +38,6 @@ def load_config(yaml_file):
     with open(yaml_file, 'r') as file:
         config = yaml.safe_load(file)
     return config
-
-config = load_config('config.yaml')
-train_config = config['train']
-data_config = config['data']
-logging_config = config['logging']
-set_seed(train_config['seed'])
 
 class CustomDatasetFromCSV(Dataset):
     def __init__(self, csv_file, transform=None):
@@ -72,26 +65,6 @@ class CustomDatasetFromCSV(Dataset):
             image = self.transform(image)
 
         return image, labels
-
-
-transform = transforms.Compose([
-    transforms.Resize(data_config['transform']['resize']),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=data_config['transform']['mean'], std=data_config['transform']['std'])
-])
-
-train_csv = './split_data/train.csv'
-val_csv = './split_data/val.csv'
-test_csv = './split_data/test.csv'
-
-train_dataset = CustomDatasetFromCSV(train_csv, transform=transform)
-val_dataset = CustomDatasetFromCSV(val_csv, transform=transform)
-test_dataset = CustomDatasetFromCSV(test_csv, transform=transform)
-
-num_workers = 4
-train_loader = DataLoader(train_dataset, batch_size=train_config['batch_size'], shuffle=True, num_workers=num_workers)
-val_loader = DataLoader(val_dataset, batch_size=train_config['batch_size'], shuffle=False, num_workers=num_workers)
-test_loader = DataLoader(test_dataset, batch_size=train_config['batch_size'], shuffle=False, num_workers=num_workers)
 
 # 모델 정의
 class DenseNetModel(LightningModule):
@@ -186,46 +159,79 @@ class DenseNetModel(LightningModule):
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
-        return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'val_loss'}
-    
-    def save_model(self, save_path):
-        torch.save(self.model.state_dict(), save_path)
+        # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
+        return {'optimizer': optimizer, 'monitor': 'val_loss'}
+        # return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'val_loss'}
+        
+    # def save_model(self, save_path):
+    #     torch.save(self.model.state_dict(), save_path)
 
-    def on_train_end(self):
-        save_dir = logging_config['local_dirpath']
-        model_name = f"resnet_final_epoch_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.pth"
-        save_path = os.path.join(save_dir, model_name)
-        self.save_model(save_path)
-        print(f"Model saved at: {save_path}")
+    # def on_train_end(self):
+    #     save_dir = logging_config['local_dirpath']
+    #     model_name = f"densenet_final_epoch_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.ckpt"
+    #     save_path = os.path.join(save_dir, model_name)
+    #     self.save_model(save_path)
+    #     print(f"Model saved at: {save_path}")
 
-num_classes = data_config['num_classes']
-learning_rate = train_config['learning_rate']
 
-model = DenseNetModel(num_classes=num_classes, learning_rate=learning_rate)
+if __name__ == '__main__':
+    if torch.__version__ >= '2.0':
+        torch.set_float32_matmul_precision('high')
+    print(torch.cuda.is_available())
 
-# 로깅 및 체크포인트
-now = datetime.datetime.now().strftime("%m%d_%H%M")
-wandb_logger = WandbLogger(project=logging_config['project_name'], log_model=logging_config['log_model'], name=f"densenet201_{now}")
+    config = load_config('config.yaml')
+    train_config = config['train']
+    data_config = config['data']
+    logging_config = config['logging']
+    set_seed(train_config['seed'])
 
-checkpoint_callback = ModelCheckpoint(
-    monitor='val_loss',
-    dirpath=os.path.join(logging_config['local_dirpath'], 'resnet'),
-    filename='densnet201-{val_loss:.2f}-{val_f1:.2f}',
-    save_top_k=1,
-    mode='min',
-)
+    transform = transforms.Compose([
+        transforms.Resize(data_config['transform']['resize']),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=data_config['transform']['mean'], std=data_config['transform']['std'])
+    ])
 
-trainer = Trainer(
-    max_epochs=train_config['max_epochs'],
-    deterministic=False,
-    logger=wandb_logger,
-    callbacks=[checkpoint_callback],
-    accelerator='gpu',
-    devices=1
-)
+    train_csv = './split_data/train.csv'
+    val_csv = './split_data/val.csv'
+    test_csv = './split_data/test.csv'
 
-trainer.fit(model, train_loader, val_loader)
-trainer.test(model, test_loader)
+    train_dataset = CustomDatasetFromCSV(train_csv, transform=transform)
+    val_dataset = CustomDatasetFromCSV(val_csv, transform=transform)
+    test_dataset = CustomDatasetFromCSV(test_csv, transform=transform)
 
-wandb.finish()
+    num_workers = 4
+    train_loader = DataLoader(train_dataset, batch_size=train_config['batch_size'], shuffle=True, num_workers=num_workers)
+    val_loader = DataLoader(val_dataset, batch_size=train_config['batch_size'], shuffle=False, num_workers=num_workers)
+    test_loader = DataLoader(test_dataset, batch_size=train_config['batch_size'], shuffle=False, num_workers=num_workers)
+
+    num_classes = data_config['num_classes']
+    learning_rate = train_config['learning_rate']
+
+    model = DenseNetModel(num_classes=num_classes, learning_rate=learning_rate)
+
+    # 로깅 및 체크포인트
+    now = datetime.datetime.now().strftime("%m%d_%H%M")
+    wandb_logger = WandbLogger(project=logging_config['project_name'], log_model=logging_config['log_model'], name=f"densenet201_{now}")
+
+    checkpoint_callback = ModelCheckpoint(
+        monitor='val_loss',
+        dirpath=os.path.join(logging_config['local_dirpath'], 'densnet201'),
+        filename='densnet201-{val_loss:.2f}-{val_f1:.2f}',
+        save_top_k=1,
+        save_last=True,
+        mode='min',
+    )
+
+    trainer = Trainer(
+        max_epochs=train_config['max_epochs'],
+        deterministic=False,
+        logger=wandb_logger,
+        callbacks=[checkpoint_callback],
+        accelerator='gpu',
+        devices=[2]
+    )
+
+    trainer.fit(model, train_loader, val_loader)
+    trainer.test(model, test_loader)
+
+    wandb.finish()
